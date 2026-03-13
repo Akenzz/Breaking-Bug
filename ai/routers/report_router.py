@@ -33,7 +33,7 @@ def report_user(
     payload: ReportUserRequest,
     db: Session = Depends(get_db),
 ):
-   
+    """File a scam report; reject duplicates with 409 Conflict."""
     try:
         result = file_report(
             db=db,
@@ -43,7 +43,6 @@ def report_user(
         )
         return result
     except ValueError as e:
-        
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e),
@@ -62,10 +61,9 @@ def scammer_status(
     user_id: int,
     db: Session = Depends(get_db),
 ):
-   
+    """Return scammer profile for the given user, or zeros if not found."""
     result = get_scammer_status(db, user_id)
 
-   
     if result is None:
         return ScammerStatusResponse(
             user_id=user_id,
