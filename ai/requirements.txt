@@ -3,3 +3,30 @@
 # Web Framework
 fastapi==0.109.2
 uvicorn[standard]==0.27.1
+
+# Google Generative AI SDK
+google-genai>=1.0.0
+
+# Image Processing
+Pillow==10.2.0
+
+# Request Parsing
+python-multipart==0.0.9
+
+# Data Validation
+pydantic==2.6.1
+
+# HTTP Client (used by google-generativeai)
+httpx==0.26.0
+
+# ML / Data Science
+scikit-learn>=1.4.0
+numpy>=1.26.0
+pandas>=2.2.0
+
+# Environment Variables
+python-dotenv==1.0.1
+
+# Database (Neon PostgreSQL)
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9
