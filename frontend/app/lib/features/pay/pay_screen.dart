@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -108,7 +109,156 @@ class _PayScreenState extends ConsumerState<PayScreen> {
     );
   }
 
+  /// Returns true if payment should proceed, false if blocked/cancelled.
+  Future<bool> _evaluateRisk(String pn, double amount) async {
+    final api = ref.read(apiServiceProvider);
+    final transactions = ref.read(transactionsProvider).value ?? [];
+    final now = DateTime.now();
+
+    final previousConnections = transactions
+        .where((t) => t.toUserName == pn)
+        .length;
+
+    final sevenDaysAgo = now.subtract(const Duration(days: 7));
+    final recentOutgoing = transactions.where((t) {
+      if (t.createdAt == null) return false;
+      final date = DateTime.tryParse(t.createdAt!);
+      return date != null && date.isAfter(sevenDaysAgo);
+    }).toList();
+    final avg7d = recentOutgoing.isEmpty
+        ? amount
+        : recentOutgoing.map((t) => t.amount).reduce((a, b) => a + b) /
+            recentOutgoing.length;
+
+    try {
+      final response = await api.evaluateRisk({
+        'amount': amount,
+        'hour_of_day': now.hour,
+        'is_weekend':
+            (now.weekday == DateTime.saturday || now.weekday == DateTime.sunday)
+                ? 1
+                : 0,
+        'receiver_account_age_days': 0,
+        'receiver_report_count': 0,
+        'receiver_tx_count_24h': 0,
+        'receiver_unique_senders_24h': 0,
+        'previous_connections_count': previousConnections,
+        'avg_transaction_amount_7d': avg7d,
+      });
+
+      if (response.statusCode != 200) return true;
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final riskScore = (data['fraud_risk_score'] as num).toDouble();
+      final isBlocked = data['is_blocked'] as bool;
+      final riskLevel = data['risk_level'] as String;
+      final message = data['message'] as String;
+      final riskReasons = List<String>.from(data['risk_reasons'] ?? []);
+
+      if (!mounted) return false;
+
+      if (isBlocked) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Row(children: [
+              Icon(Icons.block, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Payment Blocked'),
+            ]),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Risk Score: ${(riskScore * 100).toStringAsFixed(0)}%',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.red),
+                ),
+                const SizedBox(height: 8),
+                Text(message),
+                if (riskReasons.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  ...riskReasons.map((r) =>
+                      Text('• $r', style: const TextStyle(fontSize: 12))),
+                ],
+              ],
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return false;
+      }
+
+      if (riskLevel == 'HIGH' || riskLevel == 'MEDIUM') {
+        final proceed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: Row(children: [
+                  Icon(Icons.warning_amber,
+                      color: riskLevel == 'HIGH'
+                          ? Colors.deepOrange
+                          : Colors.orange),
+                  const SizedBox(width: 8),
+                  const Text('Suspicious Transaction'),
+                ]),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Risk: $riskLevel (${(riskScore * 100).toStringAsFixed(0)}%)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: riskLevel == 'HIGH'
+                            ? Colors.deepOrange
+                            : Colors.orange,
+                      ),
+                    ),
+                    if (riskReasons.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      ...riskReasons.map((r) =>
+                          Text('• $r', style: const TextStyle(fontSize: 12))),
+                    ],
+                    const SizedBox(height: 12),
+                    const Text('Do you still want to proceed?'),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel',
+                        style: TextStyle(color: Colors.red)),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Proceed Anyway'),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+        return proceed;
+      }
+    } catch (e) {
+      debugPrint('Risk evaluation error (failing open): $e');
+    }
+    return true;
+  }
+
   Future<void> _launchUpiApp(String uriString, String pa, String pn, double amount) async {
+    final canProceed = await _evaluateRisk(pn, amount);
+    if (!canProceed) {
+      setState(() => _isProcessing = false);
+      return;
+    }
+
     final Uri uri = Uri.parse(uriString);
     debugPrint("Final UPI URI attempted: $uriString");
     

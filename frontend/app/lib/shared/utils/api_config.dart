@@ -24,7 +24,12 @@ class ApiConfig {
   static const String whomIOwe = "$baseUrl/ledger/whom-i-owe";
   static const String recordPayment = "$baseUrl/ledger/record";
   
-  // AI
+  // AI - Finance
   static const String parseBills = "$aiBaseUrl/parse-bill";
   static const String analysis = "$aiBaseUrl/analyze-finance";
+
+  // AI - Fraud Detection
+  static const String evaluateRisk = "$aiBaseUrl/evaluate-risk";
+  static const String reportUser = "$aiBaseUrl/report-user";
+  static const String scammerStatus = "$aiBaseUrl/scammer-status";
 }

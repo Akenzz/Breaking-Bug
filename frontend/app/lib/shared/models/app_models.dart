@@ -324,3 +324,29 @@ class BillItem {
     );
   }
 }
+
+class FraudRiskResponse {
+  final double fraudRiskScore;
+  final String riskLevel;
+  final bool isBlocked;
+  final String message;
+  final List<String> riskReasons;
+
+  FraudRiskResponse({
+    required this.fraudRiskScore,
+    required this.riskLevel,
+    required this.isBlocked,
+    required this.message,
+    required this.riskReasons,
+  });
+
+  factory FraudRiskResponse.fromJson(Map<String, dynamic> json) {
+    return FraudRiskResponse(
+      fraudRiskScore: (json['fraud_risk_score'] ?? 0.0).toDouble(),
+      riskLevel: json['risk_level'] ?? 'SAFE',
+      isBlocked: json['is_blocked'] ?? false,
+      message: json['message'] ?? '',
+      riskReasons: List<String>.from(json['risk_reasons'] ?? []),
+    );
+  }
+}
