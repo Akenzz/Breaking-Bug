@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:smartpay/shared/utils/api_config.dart';
 
 class ApiService {
   final _storage = const FlutterSecureStorage();
@@ -26,6 +29,33 @@ class ApiService {
       headers: headers,
       body: jsonEncode(body),
     );
+  }
+
+  Future<http.StreamedResponse> postMultipart(String url, File file) async {
+    final request = http.MultipartRequest('POST', Uri.parse(url));
+    
+    String? token = await _storage.read(key: 'sp_token');
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    final fileStream = http.ByteStream(file.openRead());
+    final length = await file.length();
+    
+    final multipartFile = http.MultipartFile(
+      'file',
+      fileStream,
+      length,
+      filename: file.path.split('/').last,
+      contentType: MediaType('image', 'jpeg'), // Adjust based on extension if needed
+    );
+
+    request.files.add(multipartFile);
+    return await request.send();
+  }
+
+  Future<http.Response> recordPayment(Map<String, dynamic> data) async {
+    return await post(ApiConfig.recordPayment, data);
   }
 
   Future<void> saveToken(String token) async {

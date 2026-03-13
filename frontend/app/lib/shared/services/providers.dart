@@ -99,3 +99,28 @@ final dashboardChartProvider = FutureProvider<Map<String, dynamic>>((ref) async 
   }
   return {};
 });
+
+final analysisProvider = FutureProvider<FinanceAnalysis?>((ref) async {
+  final api = ref.watch(apiServiceProvider);
+  
+  // We need both transactions and user profile for the AI request
+  final transactions = await ref.watch(transactionsProvider.future);
+  final user = await ref.watch(userProfileProvider.future);
+  
+  if (user == null || transactions.isEmpty) {
+    return null;
+  }
+
+  final response = await api.post(ApiConfig.analysis, {
+    'transactions': transactions.map((t) => t.toJson()).toList(),
+    'username': user.fullName ?? user.email,
+  });
+
+  if (response.statusCode == 200) {
+    final decoded = jsonDecode(response.body);
+    if (decoded['success'] == true) {
+      return FinanceAnalysis.fromJson(decoded);
+    }
+  }
+  return null;
+});
