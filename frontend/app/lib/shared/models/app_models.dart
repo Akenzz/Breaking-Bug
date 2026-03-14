@@ -470,6 +470,63 @@ class TopRecipient {
   }
 }
 
+class BillResult {
+  final bool success;
+  final String filename;
+  final ParsedBill? data;
+  final double confidence;
+  final String fileHash;
+  final bool isDuplicate;
+
+  BillResult({
+    required this.success,
+    required this.filename,
+    this.data,
+    required this.confidence,
+    required this.fileHash,
+    required this.isDuplicate,
+  });
+
+  factory BillResult.fromJson(Map<String, dynamic> json) {
+    return BillResult(
+      success: json['success'] ?? false,
+      filename: json['filename'] ?? '',
+      data: json['data'] != null ? ParsedBill.fromJson(json['data']) : null,
+      confidence: (json['confidence'] ?? 0.0).toDouble(),
+      fileHash: json['file_hash'] ?? '',
+      isDuplicate: json['is_duplicate'] ?? false,
+    );
+  }
+}
+
+class ParseBillsResponse {
+  final bool success;
+  final int total;
+  final int parsed;
+  final int failed;
+  final List<BillResult> results;
+
+  ParseBillsResponse({
+    required this.success,
+    required this.total,
+    required this.parsed,
+    required this.failed,
+    required this.results,
+  });
+
+  factory ParseBillsResponse.fromJson(Map<String, dynamic> json) {
+    return ParseBillsResponse(
+      success: json['success'] ?? false,
+      total: json['total'] ?? 0,
+      parsed: json['parsed'] ?? 0,
+      failed: json['failed'] ?? 0,
+      results: (json['results'] as List? ?? [])
+          .map((e) => BillResult.fromJson(e))
+          .toList(),
+    );
+  }
+}
+
 class ParsedBill {
   final String merchant;
   final String date;

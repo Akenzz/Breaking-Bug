@@ -66,7 +66,7 @@ class ApiService {
     debugPrint('[ApiService] Uploading file: $filename, size: $length bytes, type: $contentType');
 
     request.files.add(http.MultipartFile(
-      'file',
+      'files',
       fileStream,
       length,
       filename: filename,

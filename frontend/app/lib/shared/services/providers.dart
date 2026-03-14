@@ -183,21 +183,11 @@ final transferHistoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
 });
 
 final analysisProvider = FutureProvider<FinanceAnalysis?>((ref) async {
-  debugPrint('[analysisProvider] Starting financial analysis request...');
+  debugPrint('[analysisProvider] Fetching financial analysis from backend...');
   final api = ref.watch(apiServiceProvider);
   
-  final transactions = await ref.watch(transactionsProvider.future);
-  final user = await ref.watch(userProfileProvider.future);
-  
-  if (user == null || transactions.isEmpty) {
-    return null;
-  }
-
   try {
-    final response = await api.post(ApiConfig.analysis, {
-      'transactions': transactions.map((t) => t.toJson()).toList(),
-      'username': user.fullName ?? user.email,
-    });
+    final response = await api.get(ApiConfig.analysis);
 
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);

@@ -19,6 +19,20 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
   bool _isUploading = false;
   final List<ParsedBill> _recentScans = [];
 
+  Map<String, List<ParsedBill>> get _groupedScans {
+    final Map<String, List<ParsedBill>> grouped = {};
+    for (var scan in _recentScans) {
+      final cat = scan.category.isEmpty ? 'Others' : scan.category;
+      if (!grouped.containsKey(cat)) grouped[cat] = [];
+      grouped[cat]!.add(scan);
+    }
+    return grouped;
+  }
+
+  double get _totalAmount {
+    return _recentScans.fold(0.0, (sum, item) => sum + item.total);
+  }
+
   Future<void> _pickAndUploadImage() async {
     debugPrint('[BillsScreen] Initiating image selection...');
     final picker = ImagePicker();
@@ -55,16 +69,22 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
         final decoded = jsonDecode(responseData);
         
         if (decoded['success'] == true) {
-          final parsedBill = ParsedBill.fromJson(decoded['data']);
-          debugPrint('[BillsScreen] Successfully parsed bill: Merchant=${parsedBill.merchant}, Total=${parsedBill.total}, Category=${parsedBill.category}');
+          final parseResponse = ParseBillsResponse.fromJson(decoded);
+          final successfulResults = parseResponse.results.where((r) => r.success && r.data != null).toList();
           
-          setState(() {
-            _recentScans.insert(0, parsedBill);
-          });
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Successfully parsed bill from ${parsedBill.merchant}')),
-            );
+          if (successfulResults.isNotEmpty) {
+            setState(() {
+              for (var res in successfulResults) {
+                _recentScans.insert(0, res.data!);
+              }
+            });
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Successfully parsed ${successfulResults.length} bill(s)')),
+              );
+            }
+          } else {
+            throw Exception('No bills could be parsed from the image');
           }
         } else {
           final errorMsg = decoded['error'] ?? 'Failed to parse bill';
@@ -153,8 +173,35 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
               ),
             ),
             const SizedBox(height: 40),
+            if (_recentScans.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00C896).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Total Scanned',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text(
+                      '₹${_totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 20, 
+                        color: Color(0xFF00C896)
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
             const Text(
-              'Recent Scans',
+              'Expenses by Category',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -166,21 +213,54 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                 ),
               )
             else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _recentScans.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final bill = _recentScans[index];
-                  return _BillScanItem(
-                    merchant: bill.merchant,
-                    date: bill.date,
-                    amount: '${bill.currency} ${bill.total.toStringAsFixed(2)}',
-                    category: bill.category,
-                  );
-                },
-              ),
+              ..._groupedScans.entries.map((entry) {
+                final category = entry.key;
+                final bills = entry.value;
+                final categoryTotal = bills.fold(0.0, (sum, b) => sum + b.total);
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            category.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 12, 
+                              fontWeight: FontWeight.bold, 
+                              color: Colors.grey.shade600,
+                              letterSpacing: 1.2
+                            ),
+                          ),
+                          Text(
+                            '₹${categoryTotal.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: bills.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final bill = bills[index];
+                        return _BillScanItem(
+                          merchant: bill.merchant,
+                          date: bill.date,
+                          amount: '${bill.currency} ${bill.total.toStringAsFixed(2)}',
+                          category: bill.category,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                );
+              }),
           ],
         ),
       ),

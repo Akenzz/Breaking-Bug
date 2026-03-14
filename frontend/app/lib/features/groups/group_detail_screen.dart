@@ -69,12 +69,15 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                 final responseBody = await response.stream.bytesToString();
                 final data = jsonDecode(responseBody);
                 if (data['success'] == true) {
-                  final bill = ParsedBill.fromJson(data['data']);
-                  setDialogState(() {
-                    descController.text = bill.merchant;
-                    amountController.text = bill.total.toStringAsFixed(2);
-                    parsedBillCategory = bill.category;
-                  });
+                  final parseResponse = ParseBillsResponse.fromJson(data);
+                  if (parseResponse.results.isNotEmpty && parseResponse.results.first.success) {
+                    final bill = parseResponse.results.first.data!;
+                    setDialogState(() {
+                      descController.text = bill.merchant;
+                      amountController.text = bill.total.toStringAsFixed(2);
+                      parsedBillCategory = bill.category;
+                    });
+                  }
                 }
               }
             } catch (e) {

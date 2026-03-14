@@ -1,6 +1,6 @@
 class ApiConfig {
   static const String baseUrl = "https://smartpay-ivwr.onrender.com";
-  static const String aiBaseUrl = "https://akenzz-smartpay.hf.space";
+  static const String aiBaseUrl = "https://Akenzz-SmartPay.hf.space";
   
   // Auth
   static const String login = "$baseUrl/auth/login";
@@ -33,11 +33,11 @@ class ApiConfig {
   static const String confirmTransfer = "$baseUrl/transfers/confirm";
   
   // AI - Finance
-  static const String parseBills = "$aiBaseUrl/parse-bill";
-  static const String analysis = "$aiBaseUrl/analyze-finance";
+  static const String parseBills = "$aiBaseUrl/parse-bills";
+  static const String analysis = "$baseUrl/analysis/me";
 
   // AI - Fraud Detection
-  static const String evaluateRisk = "$aiBaseUrl/evaluate-risk";
+  static const String evaluateRisk = "$baseUrl/risk/evaluate";
   static const String reportUser = "$aiBaseUrl/report-user";
   static const String scammerStatus = "$aiBaseUrl/scammer-status";
 }
