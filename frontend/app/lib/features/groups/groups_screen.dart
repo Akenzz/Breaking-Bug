@@ -1,12 +1,101 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:smartpay/shared/services/providers.dart';
 import 'package:smartpay/shared/models/app_models.dart';
+import 'package:smartpay/shared/utils/api_config.dart';
 
 class GroupsScreen extends ConsumerWidget {
   const GroupsScreen({super.key});
+
+  void _showJoinGroupDialog(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Join Group'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Group Code',
+            hintText: 'Enter the invite code',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final api = ref.read(apiServiceProvider);
+              final res = await api.post('${ApiConfig.baseUrl}/groups/join?code=${controller.text}', {});
+              if (context.mounted) {
+                Navigator.pop(context);
+                final decoded = jsonDecode(res.body);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(decoded['message'] ?? 'Joined group')),
+                );
+                ref.invalidate(groupsProvider);
+              }
+            },
+            child: const Text('Join'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCreateGroupDialog(BuildContext context, WidgetRef ref) {
+    final nameController = TextEditingController();
+    final descController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Group'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                hintText: 'Group name',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'Optional description',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final api = ref.read(apiServiceProvider);
+              final res = await api.post('${ApiConfig.baseUrl}/groups', {
+                'name': nameController.text,
+                'description': descController.text,
+              });
+              if (context.mounted) {
+                Navigator.pop(context);
+                final decoded = jsonDecode(res.body);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(decoded['message'] ?? 'Group created')),
+                );
+                ref.invalidate(groupsProvider);
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -17,7 +106,7 @@ class GroupsScreen extends ConsumerWidget {
         title: const Text('Groups'),
         actions: [
           TextButton.icon(
-            onPressed: () {},
+            onPressed: () => _showJoinGroupDialog(context, ref),
             icon: const Icon(LucideIcons.plusCircle, size: 16),
             label: const Text('Join'),
           ),
@@ -61,7 +150,7 @@ class GroupsScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
+        onPressed: () => _showCreateGroupDialog(context, ref),
         backgroundColor: Colors.black,
         icon: const Icon(LucideIcons.plus, color: Colors.white),
         label: const Text('Create Group', style: TextStyle(color: Colors.white)),

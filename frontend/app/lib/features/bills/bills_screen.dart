@@ -20,6 +20,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
   final List<ParsedBill> _recentScans = [];
 
   Future<void> _pickAndUploadImage() async {
+    debugPrint('[BillsScreen] Initiating image selection...');
     final picker = ImagePicker();
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
@@ -28,15 +29,26 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
       imageQuality: 85,
     );
 
-    if (image == null) return;
+    if (image == null) {
+      debugPrint('[BillsScreen] Image selection cancelled by user.');
+      return;
+    }
+
+    final File imageFile = File(image.path);
+    final int fileSize = await imageFile.length();
+    debugPrint('[BillsScreen] Image selected: ${image.path} (${(fileSize / 1024).toStringAsFixed(2)} KB)');
 
     setState(() {
       _isUploading = true;
     });
 
+    final stopwatch = Stopwatch()..start();
     try {
+      debugPrint('[BillsScreen] Starting multipart upload to: ${ApiConfig.parseBills}');
       final api = ref.read(apiServiceProvider);
-      final response = await api.postMultipart(ApiConfig.parseBills, File(image.path));
+      final response = await api.postMultipart(ApiConfig.parseBills, imageFile);
+      
+      debugPrint('[BillsScreen] Upload response received with status code: ${response.statusCode}');
       
       if (response.statusCode == 200) {
         final responseData = await response.stream.bytesToString();
@@ -44,6 +56,8 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
         
         if (decoded['success'] == true) {
           final parsedBill = ParsedBill.fromJson(decoded['data']);
+          debugPrint('[BillsScreen] Successfully parsed bill: Merchant=${parsedBill.merchant}, Total=${parsedBill.total}, Category=${parsedBill.category}');
+          
           setState(() {
             _recentScans.insert(0, parsedBill);
           });
@@ -53,18 +67,25 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
             );
           }
         } else {
-          throw Exception(decoded['error'] ?? 'Failed to parse bill');
+          final errorMsg = decoded['error'] ?? 'Failed to parse bill';
+          debugPrint('[BillsScreen] API reported failure: $errorMsg');
+          throw Exception(errorMsg);
         }
       } else {
+        debugPrint('[BillsScreen] Server error: HTTP ${response.statusCode}');
         throw Exception('Server returned ${response.statusCode}');
       }
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[BillsScreen] Error during image upload/parsing: $e');
+      debugPrint('[BillsScreen] Stack trace: $stack');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
+      stopwatch.stop();
+      debugPrint('[BillsScreen] Total process time: ${stopwatch.elapsedMilliseconds}ms');
       if (mounted) {
         setState(() {
           _isUploading = false;

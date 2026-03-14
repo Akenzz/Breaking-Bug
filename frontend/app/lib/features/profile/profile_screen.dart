@@ -1,11 +1,48 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:smartpay/shared/services/providers.dart';
+import 'package:smartpay/shared/utils/api_config.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
+
+  void _showEditUpiDialog(BuildContext context, WidgetRef ref, String? currentUpi) {
+    final controller = TextEditingController(text: currentUpi);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Update UPI ID'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'UPI ID',
+            hintText: 'yourname@bank',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final api = ref.read(apiServiceProvider);
+              final res = await api.post('${ApiConfig.baseUrl}/users/upi', {'upiId': controller.text});
+              if (context.mounted) {
+                Navigator.pop(context);
+                final decoded = jsonDecode(res.body);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(decoded['message'] ?? 'UPI ID updated')),
+                );
+                ref.invalidate(userProfileProvider);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,7 +93,7 @@ class ProfileScreen extends ConsumerWidget {
                   icon: LucideIcons.qrCode,
                   label: 'UPI ID',
                   value: user.upiId ?? 'Not set',
-                  onEdit: () {},
+                  onEdit: () => _showEditUpiDialog(context, ref, user.upiId),
                 ),
                 const SizedBox(height: 32),
                 Card(

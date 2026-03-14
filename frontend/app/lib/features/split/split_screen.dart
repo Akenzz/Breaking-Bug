@@ -1,22 +1,61 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:smartpay/shared/services/providers.dart';
+import 'package:smartpay/shared/models/app_models.dart';
+import 'package:smartpay/shared/utils/api_config.dart';
 
-class SplitScreen extends StatefulWidget {
+class SplitScreen extends ConsumerStatefulWidget {
   const SplitScreen({super.key});
 
   @override
-  State<SplitScreen> createState() => _SplitScreenState();
+  ConsumerState<SplitScreen> createState() => _SplitScreenState();
 }
 
-class _SplitScreenState extends State<SplitScreen> {
+class _SplitScreenState extends ConsumerState<SplitScreen> {
   int _currentStep = 1;
-  final List<String> _selectedFriends = [];
-  final List<Map<String, String>> _friends = [
-    {'name': 'Gandu', 'email': 'GanduGyaani@gmail.com', 'phone': '7619562239'},
-    {'name': 'Akenzz', 'email': 'kiniamogh91@gmail.com', 'phone': '8073561046'},
-    {'name': 'Tester', 'email': 'tester@mail.com', 'phone': '1234567890'},
-    {'name': 'Berry', 'email': 'shivayveer6@gmail.com', 'phone': '0123456789'},
-  ];
+  final List<int> _selectedFriendIds = [];
+  final TextEditingController _descController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
+  String _splitType = 'EQUAL';
+  bool _isSubmitting = false;
+
+  Future<void> _handleSplit() async {
+    if (_descController.text.isEmpty || _amountController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    final user = ref.read(userProfileProvider).value;
+    final api = ref.read(apiServiceProvider);
+
+    final payload = {
+      'description': _descController.text,
+      'amount': double.parse(_amountController.text),
+      'payerId': user?.id,
+      'splitType': _splitType,
+      'userIds': [user?.id, ..._selectedFriendIds],
+    };
+
+    try {
+      final res = await api.post(ApiConfig.directSplit, payload);
+      if (mounted) {
+        final decoded = jsonDecode(res.body);
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Split created successfully!')));
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(decoded['message'] ?? 'Failed to create split')));
+        }
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,20 +71,28 @@ class _SplitScreenState extends State<SplitScreen> {
           border: Border(top: BorderSide(color: Colors.grey.shade100)),
         ),
         child: ElevatedButton(
-          onPressed: () {
-            if (_currentStep == 1 && _selectedFriends.isNotEmpty) {
-              setState(() => _currentStep = 2);
-            } else if (_currentStep == 2) {
-              Navigator.pop(context);
+          onPressed: _isSubmitting ? null : () {
+            if (_currentStep == 1) {
+              if (_selectedFriendIds.isNotEmpty) {
+                setState(() => _currentStep = 2);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select at least one friend')));
+              }
+            } else {
+              _handleSplit();
             }
           },
-          child: Text(_currentStep == 1 ? 'Next' : 'Submit'),
+          child: _isSubmitting 
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : Text(_currentStep == 1 ? 'Next' : 'Create Split'),
         ),
       ),
     );
   }
 
   Widget _buildStep1() {
+    final friendsAsync = ref.watch(friendsProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -57,27 +104,38 @@ class _SplitScreenState extends State<SplitScreen> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            itemCount: _friends.length,
-            itemBuilder: (context, index) {
-              final friend = _friends[index];
-              final isSelected = _selectedFriends.contains(friend['name']);
-              return CheckboxListTile(
-                value: isSelected,
-                onChanged: (val) {
-                  setState(() {
-                    if (val!) {
-                      _selectedFriends.add(friend['name']!);
-                    } else {
-                      _selectedFriends.remove(friend['name']!);
-                    }
-                  });
+          child: friendsAsync.when(
+            data: (friends) {
+              if (friends.isEmpty) return const Center(child: Text('No friends found. Add friends first.'));
+              return ListView.builder(
+                itemCount: friends.length,
+                itemBuilder: (context, index) {
+                  final friend = friends[index];
+                  final isSelected = _selectedFriendIds.contains(friend.id);
+                  return CheckboxListTile(
+                    value: isSelected,
+                    onChanged: (val) {
+                      setState(() {
+                        if (val!) {
+                          _selectedFriendIds.add(friend.id!);
+                        } else {
+                          _selectedFriendIds.remove(friend.id!);
+                        }
+                      });
+                    },
+                    title: Text(friend.fullName),
+                    subtitle: Text(friend.email, style: const TextStyle(fontSize: 12)),
+                    secondary: CircleAvatar(
+                      backgroundColor: isSelected ? const Color(0xFF00C896) : Colors.grey.shade200,
+                      child: Text(friend.fullName.isNotEmpty ? friend.fullName[0].toUpperCase() : '?', 
+                        style: TextStyle(color: isSelected ? Colors.white : Colors.black)),
+                    ),
+                  );
                 },
-                title: Text(friend['name']!),
-                subtitle: Text(friend['email']!, style: const TextStyle(fontSize: 12)),
-                secondary: CircleAvatar(child: Text(friend['name']![0])),
               );
             },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, s) => Center(child: Text('Error: $e')),
           ),
         ),
       ],
@@ -90,12 +148,18 @@ class _SplitScreenState extends State<SplitScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Expense Details',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              IconButton(onPressed: () => setState(() => _currentStep = 1), icon: const Icon(LucideIcons.arrowLeft)),
+              const Text(
+                'Expense Details',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           TextField(
+            controller: _descController,
             decoration: InputDecoration(
               labelText: 'DESCRIPTION',
               hintText: 'e.g. Dinner',
@@ -105,14 +169,15 @@ class _SplitScreenState extends State<SplitScreen> {
           ),
           const SizedBox(height: 24),
           TextField(
+            controller: _amountController,
             decoration: InputDecoration(
               labelText: 'TOTAL AMOUNT',
-              hintText: '₹0.00',
+              hintText: '0.00',
               prefixText: '₹ ',
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               floatingLabelBehavior: FloatingLabelBehavior.always,
             ),
-            keyboardType: TextInputType.number,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 32),
           const Text(
@@ -122,11 +187,40 @@ class _SplitScreenState extends State<SplitScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _SplitTypeButton(label: 'EQUAL', isSelected: true, icon: LucideIcons.equal),
+              _SplitTypeButton(
+                label: 'EQUAL', 
+                isSelected: _splitType == 'EQUAL', 
+                icon: LucideIcons.equal,
+                onTap: () => setState(() => _splitType = 'EQUAL'),
+              ),
               const SizedBox(width: 12),
-              _SplitTypeButton(label: 'EXACT', isSelected: false, icon: LucideIcons.hash),
+              _SplitTypeButton(
+                label: 'EXACT', 
+                isSelected: _splitType == 'EXACT', 
+                icon: LucideIcons.hash,
+                onTap: () => setState(() => _splitType = 'EXACT'),
+              ),
             ],
           ),
+          if (_splitType == 'EQUAL' && _amountController.text.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00C896).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Per person (${_selectedFriendIds.length + 1})', style: const TextStyle(fontWeight: FontWeight.w500)),
+                    Text('₹${(double.parse(_amountController.text) / (_selectedFriendIds.length + 1)).toStringAsFixed(2)}', 
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -137,31 +231,35 @@ class _SplitTypeButton extends StatelessWidget {
   final String label;
   final bool isSelected;
   final IconData icon;
+  final VoidCallback onTap;
 
-  const _SplitTypeButton({required this.label, required this.isSelected, required this.icon});
+  const _SplitTypeButton({required this.label, required this.isSelected, required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF00C896).withValues(alpha: 0.1) : Colors.white,
-          border: Border.all(color: isSelected ? const Color(0xFF00C896) : Colors.grey.shade200),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: isSelected ? const Color(0xFF00C896) : Colors.grey),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isSelected ? const Color(0xFF00C896) : Colors.grey,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF00C896).withValues(alpha: 0.1) : Colors.white,
+            border: Border.all(color: isSelected ? const Color(0xFF00C896) : Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: isSelected ? const Color(0xFF00C896) : Colors.grey),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? const Color(0xFF00C896) : Colors.grey,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

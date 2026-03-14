@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -31,7 +32,13 @@ class ApiService {
     );
   }
 
+  Future<http.Response> delete(String url) async {
+    final headers = await _getHeaders();
+    return await http.delete(Uri.parse(url), headers: headers);
+  }
+
   Future<http.StreamedResponse> postMultipart(String url, File file) async {
+    debugPrint('[ApiService] postMultipart: $url, file: ${file.path}');
     final request = http.MultipartRequest('POST', Uri.parse(url));
 
     String? token = await _storage.read(key: 'sp_token');
@@ -49,14 +56,14 @@ class ApiService {
       'webp': MediaType('image', 'webp'),
     };
     final contentType = mimeTypes[ext] ?? MediaType('image', 'jpeg');
-    // image_picker converts HEIC/unsupported formats to JPEG content,
-    // so force a .jpg filename so the backend extension check passes.
     final filename = mimeTypes.containsKey(ext)
         ? file.path.split('/').last
         : '${file.path.split('/').last.split('.').first}.jpg';
 
     final fileStream = http.ByteStream(file.openRead());
     final length = await file.length();
+    
+    debugPrint('[ApiService] Uploading file: $filename, size: $length bytes, type: $contentType');
 
     request.files.add(http.MultipartFile(
       'file',
