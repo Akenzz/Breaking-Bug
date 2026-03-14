@@ -38,3 +38,8 @@ buildNumber.properties
 Thumbs.db
 
 .env
+
+node_modules/
+.next/
+build/
+.DS_Store

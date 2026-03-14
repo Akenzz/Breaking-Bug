@@ -1,0 +1,474 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+/* Semantic Design Tokens - Light */
+:root {
+  --color-bg: #FFFFFF;
+  --color-surface: #F7F8FA;
+  --color-surface-2: #EEF0F4;
+  --color-surface-3: #E2E5EB;
+  --color-border: #E0E3E8;
+  --color-border-hover: #C8CCD3;
+  --color-text-primary: #0F1419;
+  --color-text-secondary: #4B5563;
+  --color-text-tertiary: #6B7280;
+  --color-text-muted: #9CA3AF;
+  --color-accent: #111111;
+  --color-accent-hover: #333333;
+  --color-accent-text: #FFFFFF;
+  --color-highlight: #D0FF00;
+  --color-highlight-text: #111111;
+  --color-lime-text: #2CA94F;
+  --color-lime-subtle: rgba(44, 169, 79, 0.08);
+
+  /* Motion tokens */
+  --sp-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --sp-ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --sp-duration-fast: 180ms;
+  --sp-duration-base: 280ms;
+  --sp-duration-slow: 360ms;
+  --sp-interactive-scale: 1.02;
+  --sp-elevation-soft: 0 10px 22px rgba(0, 0, 0, 0.06);
+  --sp-elevation-card: 0 14px 26px rgba(0, 0, 0, 0.08);
+  --sp-glow-green: 0 0 0 1px rgba(44, 169, 79, 0.2), 0 0 24px rgba(44, 169, 79, 0.10);
+  --sp-glow-green-soft: 0 0 0 1px rgba(44, 169, 79, 0.14), 0 0 16px rgba(44, 169, 79, 0.08);
+}
+
+/* Semantic Design Tokens - Dark */
+.dark {
+  --color-bg: #0D1117;
+  --color-surface: #0D1117;
+  --color-surface-2: #161b22;
+  --color-surface-3: #21262d;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(255, 255, 255, 0.15);
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #D1D5DB;
+  --color-text-tertiary: #9CA3AF;
+  --color-text-muted: #6B7280;
+  --color-accent: #F0F0F0;
+  --color-accent-hover: #D4D4D4;
+  --color-accent-text: #0A0A0A;
+  --color-highlight: #D0FF00;
+  --color-highlight-text: #111111;
+  --color-lime-text: #D0FF00;
+  --color-lime-subtle: rgba(208, 255, 0, 0.08);
+  --color-sp-blue-light: #162A44;
+  --color-sp-green-light: #152E1C;
+
+  --sp-elevation-soft: 0 12px 24px rgba(0, 0, 0, 0.34);
+  --sp-elevation-card: 0 16px 32px rgba(0, 0, 0, 0.4);
+  --sp-glow-green: 0 0 0 1px rgba(208, 255, 0, 0.34), 0 0 28px rgba(208, 255, 0, 0.2);
+  --sp-glow-green-soft: 0 0 0 1px rgba(208, 255, 0, 0.22), 0 0 18px rgba(208, 255, 0, 0.16);
+}
+
+@theme inline {
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text-primary);
+
+  --color-sp-bg: var(--color-bg);
+  --color-sp-surface: var(--color-surface);
+  --color-sp-surface-2: var(--color-surface-2);
+  --color-sp-surface-3: var(--color-surface-3);
+  --color-sp-border: var(--color-border);
+  --color-sp-border-hover: var(--color-border-hover);
+  --color-sp-text: var(--color-text-primary);
+  --color-sp-text-secondary: var(--color-text-secondary);
+  --color-sp-text-tertiary: var(--color-text-tertiary);
+  --color-sp-text-muted: var(--color-text-muted);
+  --color-sp-accent: var(--color-accent);
+  --color-sp-accent-hover: var(--color-accent-hover);
+  --color-sp-accent-text: var(--color-accent-text);
+  --color-sp-highlight: var(--color-highlight);
+  --color-sp-highlight-text: var(--color-highlight-text);
+  --color-sp-lime-text: var(--color-lime-text);
+
+  --color-sp-blue: #2072CE;
+  --color-sp-green: #2CA94F;
+  --color-sp-blue-light: #EBF3FC;
+  --color-sp-green-light: #EAF7ED;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Base */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+/* Selection */
+::selection {
+  background-color: var(--color-highlight);
+  color: var(--color-highlight-text);
+}
+
+/* Scroll */
+html {
+  scroll-behavior: smooth;
+  overflow-x: clip;
+}
+
+section {
+  transition:
+    background-color var(--sp-duration-base) var(--sp-ease-standard),
+    border-color var(--sp-duration-base) var(--sp-ease-standard);
+}
+
+@keyframes sp-page-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.sp-page-transition {
+  animation: sp-page-enter var(--sp-duration-slow) var(--sp-ease-standard);
+}
+
+.sp-section-transition {
+  transition:
+    opacity var(--sp-duration-slow) var(--sp-ease-standard),
+    transform var(--sp-duration-slow) var(--sp-ease-standard);
+}
+
+.sp-interactive {
+  transform: translate3d(0, 0, 0);
+  transform-origin: center;
+  will-change: transform;
+  transition-property: transform, box-shadow, border-color, background-color, color, opacity;
+  transition-duration: var(--sp-duration-base);
+  transition-timing-function: var(--sp-ease-premium);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sp-interactive:hover:not(:disabled):not([aria-disabled="true"]) {
+    transform: translate3d(0, -1px, 0) scale(var(--sp-interactive-scale));
+    box-shadow: var(--sp-elevation-soft), var(--sp-glow-green-soft);
+  }
+}
+
+.sp-interactive:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: translate3d(0, 1px, 0) scale(0.985);
+  transition-duration: var(--sp-duration-fast);
+}
+
+.sp-card-interactive {
+  transform: translate3d(0, 0, 0);
+  transform-origin: center;
+  will-change: transform;
+  transition-property: transform, box-shadow, border-color, background-color, color, opacity;
+  transition-duration: var(--sp-duration-base);
+  transition-timing-function: var(--sp-ease-premium);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sp-card-interactive:hover {
+    transform: translate3d(0, -3px, 0) scale(var(--sp-interactive-scale));
+    box-shadow: var(--sp-elevation-card), var(--sp-glow-green-soft);
+  }
+}
+
+.sp-link-interactive {
+  transform: translate3d(0, 0, 0);
+  transform-origin: center;
+  will-change: transform;
+  transition-property: transform, color, opacity, text-decoration-color, filter;
+  transition-duration: var(--sp-duration-base);
+  transition-timing-function: var(--sp-ease-premium);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sp-link-interactive:hover {
+    transform: translate3d(0, -1px, 0) scale(var(--sp-interactive-scale));
+    filter: drop-shadow(0 0 10px rgba(198, 255, 0, 0.16));
+  }
+
+  button:hover:not(:disabled):not([aria-disabled="true"]),
+  [role="button"]:hover:not(:disabled):not([aria-disabled="true"]),
+  input[type="button"]:hover:not(:disabled):not([aria-disabled="true"]),
+  input[type="submit"]:hover:not(:disabled):not([aria-disabled="true"]),
+  input[type="reset"]:hover:not(:disabled):not([aria-disabled="true"]) {
+    transform: translate3d(0, -1px, 0) scale(var(--sp-interactive-scale));
+  }
+}
+
+.sp-link-interactive:active {
+  transform: translate3d(0, 1px, 0) scale(0.985);
+  transition-duration: var(--sp-duration-fast);
+}
+
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  transition-duration: var(--sp-duration-base);
+  transition-timing-function: var(--sp-ease-premium);
+}
+
+button:active:not(:disabled):not([aria-disabled="true"]),
+[role="button"]:active:not(:disabled):not([aria-disabled="true"]),
+input[type="button"]:active:not(:disabled):not([aria-disabled="true"]),
+input[type="submit"]:active:not(:disabled):not([aria-disabled="true"]),
+input[type="reset"]:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: translate3d(0, 1px, 0) scale(0.985);
+  transition-duration: var(--sp-duration-fast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .sp-page-transition {
+    animation: none;
+  }
+
+  .sp-interactive,
+  .sp-card-interactive,
+  .sp-link-interactive {
+    transform: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+}
+
+/* Hide scrollbar globally */
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+html,
+body,
+* {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* ── Gradient Button CSS Properties ── */
+
+@property --pos-x {
+  syntax: '<percentage>';
+  initial-value: 11.14%;
+  inherits: false;
+}
+
+@property --pos-y {
+  syntax: '<percentage>';
+  initial-value: 140%;
+  inherits: false;
+}
+
+@property --spread-x {
+  syntax: '<percentage>';
+  initial-value: 150%;
+  inherits: false;
+}
+
+@property --spread-y {
+  syntax: '<percentage>';
+  initial-value: 180.06%;
+  inherits: false;
+}
+
+@property --color-1 {
+  syntax: '<color>';
+  initial-value: #000;
+  inherits: false;
+}
+
+@property --color-2 {
+  syntax: '<color>';
+  initial-value: #08012c;
+  inherits: false;
+}
+
+@property --color-3 {
+  syntax: '<color>';
+  initial-value: #4e1e40;
+  inherits: false;
+}
+
+@property --color-4 {
+  syntax: '<color>';
+  initial-value: #70464e;
+  inherits: false;
+}
+
+@property --color-5 {
+  syntax: '<color>';
+  initial-value: #88394c;
+  inherits: false;
+}
+
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 20deg;
+  inherits: true;
+}
+
+@property --border-color-1 {
+  syntax: '<color>';
+  initial-value: hsla(340, 75%, 60%, 0.2);
+  inherits: true;
+}
+
+@property --border-color-2 {
+  syntax: '<color>';
+  initial-value: hsla(340, 75%, 40%, 0.75);
+  inherits: true;
+}
+
+@property --stop-1 {
+  syntax: '<percentage>';
+  initial-value: 37.35%;
+  inherits: false;
+}
+
+@property --stop-2 {
+  syntax: '<percentage>';
+  initial-value: 61.36%;
+  inherits: false;
+}
+
+@property --stop-3 {
+  syntax: '<percentage>';
+  initial-value: 78.42%;
+  inherits: false;
+}
+
+@property --stop-4 {
+  syntax: '<percentage>';
+  initial-value: 89.52%;
+  inherits: false;
+}
+
+@property --stop-5 {
+  syntax: '<percentage>';
+  initial-value: 100%;
+  inherits: false;
+}
+
+/* ── Gradient Button Component Styles ── */
+
+.gradient-button {
+  position: relative;
+  appearance: none;
+  cursor: pointer;
+  background: radial-gradient(var(--spread-x) var(--spread-y) at var(--pos-x) var(--pos-y),
+      var(--color-1) var(--stop-1),
+      var(--color-2) var(--stop-2),
+      var(--color-3) var(--stop-3),
+      var(--color-4) var(--stop-4),
+      var(--color-5) var(--stop-5));
+  transition:
+    --pos-x 0.5s,
+    --pos-y 0.5s,
+    --spread-x 0.5s,
+    --spread-y 0.5s,
+    --color-1 0.5s,
+    --color-2 0.5s,
+    --color-3 0.5s,
+    --color-4 0.5s,
+    --color-5 0.5s,
+    --border-angle 0.5s,
+    --border-color-1 0.5s,
+    --border-color-2 0.5s,
+    --stop-1 0.5s,
+    --stop-2 0.5s,
+    --stop-3 0.5s,
+    --stop-4 0.5s,
+    --stop-5 0.5s;
+}
+
+.gradient-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(var(--border-angle),
+      var(--border-color-1),
+      var(--border-color-2));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.gradient-button:hover {
+  --pos-x: 0%;
+  --pos-y: 91.51%;
+  --spread-x: 120.24%;
+  --spread-y: 103.18%;
+  --color-1: #c96287;
+  --color-2: #c66c64;
+  --color-3: #cc7d23;
+  --color-4: #37140a;
+  --color-5: #000;
+  --border-angle: 190deg;
+  --border-color-1: hsla(340, 78%, 90%, 0.1);
+  --border-color-2: hsla(340, 75%, 90%, 0.6);
+  --stop-1: 0%;
+  --stop-2: 8.8%;
+  --stop-3: 21.44%;
+  --stop-4: 71.34%;
+  --stop-5: 85.76%;
+}
+
+.gradient-button-variant {
+  --color-1: #000022;
+  --color-2: #1f3f6d;
+  --color-3: #469396;
+  --color-4: #f1ffa5;
+  --border-angle: 200deg;
+  --border-color-1: hsla(320, 75%, 90%, 0.6);
+  --border-color-2: hsla(320, 50%, 90%, 0.15);
+}
+
+.gradient-button-variant:hover {
+  --pos-x: 0%;
+  --pos-y: 95.51%;
+  --spread-x: 110.24%;
+  --spread-y: 110.2%;
+  --color-1: #000020;
+  --color-2: #f1ffa5;
+  --color-3: #469396;
+  --color-4: #1f3f6d;
+  --color-5: #000;
+  --stop-1: 0%;
+  --stop-2: 10%;
+  --stop-3: 35.44%;
+  --stop-4: 71.34%;
+  --stop-5: 90.76%;
+  --border-angle: 210deg;
+  --border-color-1: hsla(320, 75%, 90%, 0.2);
+  --border-color-2: hsla(320, 50%, 90%, 0.75);
+}
