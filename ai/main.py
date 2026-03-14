@@ -1,21 +1,22 @@
+import logging
 import os
 import sys
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, Any, Optional, Set
 from contextlib import asynccontextmanager
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set
+
 from dotenv import load_dotenv
-
-load_dotenv()
-
-import logging
-from fastapi import FastAPI, File, UploadFile, HTTPException, status, Query
-from typing import List as TypingList
-
-logger = logging.getLogger(__name__)
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+
+load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+APP_VERSION = "3.0.0"
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -192,8 +193,8 @@ async def lifespan(app: FastAPI):
         if api_key:
             gemini_parser = GeminiParser(api_key=api_key)
             finance_analyzer = FinanceAnalyzer(api_key=api_key)
-    except (GeminiParserError, FinanceAnalyzerError):
-        pass
+    except (GeminiParserError, FinanceAnalyzerError) as e:
+        logger.warning("AI services failed to initialize: %s", e)
     
     yield
 
@@ -203,7 +204,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SmartPay AI Microservices",
     description="AI services for SmartPay",
-    version="3.0.0",
+    version=APP_VERSION,
     lifespan=lifespan
 )
 
@@ -249,7 +250,7 @@ async def file_handler_error_handler(request, exc: FileHandlerError):
 async def root():
     return {
         "service": "SmartPay AI Microservices",
-        "version": "3.0.0",
+        "version": APP_VERSION,
         "documentation": "/docs",
         "health": "/health"
     }
@@ -267,7 +268,7 @@ async def health_check():
     
     return HealthResponse(
         status="healthy",
-        version="3.0.0",
+        version=APP_VERSION,
         gemini_connected=gemini_connected,
         timestamp=datetime.now().isoformat()
     )
@@ -310,9 +311,7 @@ async def parse_bill(
         )
     
     is_duplicate = file_hash in processed_hashes
-    if is_duplicate and not skip_duplicate_check:
-        pass
-    
+
     try:
         result = gemini_parser.parse_bill(image)
         processed_hashes.add(file_hash)
@@ -345,7 +344,7 @@ async def parse_bill(
     tags=["Parsing"]
 )
 async def parse_bills(
-    files: TypingList[UploadFile] = File(..., description="Multiple bill/receipt image files"),
+    files: List[UploadFile] = File(..., description="Multiple bill/receipt image files"),
     skip_duplicate_check: bool = Query(False, description="Skip duplicate detection")
 ):
     """Parse multiple bill/receipt images in a single request."""
@@ -489,7 +488,7 @@ async def analyze_finance(request: FinanceAnalysisRequest):
         )
 
         processing_time = (datetime.now() - start_time).total_seconds() * 1000
-        logger.info(f"Finance analysis completed in {processing_time:.0f}ms")
+        logger.info("Finance analysis completed in %.0fms", processing_time)
 
         return FinanceAnalysisResponse(success=True, **result)
 
@@ -499,7 +498,7 @@ async def analyze_finance(request: FinanceAnalysisRequest):
             detail=str(e),
         )
     except Exception as e:
-        logger.error(f"Unexpected error in /analyze-finance: {e}")
+        logger.error("Unexpected error in /analyze-finance: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal error: {str(e)}",

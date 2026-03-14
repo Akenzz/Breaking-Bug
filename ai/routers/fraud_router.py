@@ -25,12 +25,11 @@ router = APIRouter(tags=["Fraud Detection"])
     ),
 )
 def evaluate_transaction_risk(payload: TransactionStatsRequest):
-   
+    """Evaluate fraud risk for a single transaction using XGBoost + SHAP."""
     try:
         result = evaluate_risk(payload.model_dump())
         return result
     except FileNotFoundError as e:
-       
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(e),
