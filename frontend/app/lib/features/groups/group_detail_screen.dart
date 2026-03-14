@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:smartpay/shared/services/providers.dart';
@@ -24,6 +25,12 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   void _showAddExpenseDialog(GroupDetail detail) {
@@ -78,9 +85,20 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
           }
 
           return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: Row(
               children: [
-                const Expanded(child: Text('Add Expense')),
+                Expanded(
+                  child: Text(
+                    'Add Expense',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
                 if (isParsingBill)
                   const SizedBox(
                     width: 20,
@@ -118,7 +136,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF00C896).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: const Color(0xFF00C896).withValues(alpha: 0.3),
                         ),
@@ -136,7 +154,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF00C896),
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -149,6 +167,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                       hintText: 'e.g. Dinner',
                     ),
                   ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: amountController,
                     decoration: const InputDecoration(
@@ -169,6 +188,14 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                           selected: splitType == 'EQUAL',
                           onSelected: (v) =>
                               setDialogState(() => splitType = 'EQUAL'),
+                          selectedColor:
+                              const Color(0xFF00C896).withValues(alpha: 0.15),
+                          labelStyle: TextStyle(
+                            color: splitType == 'EQUAL'
+                                ? const Color(0xFF00C896)
+                                : null,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -178,17 +205,29 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                           selected: splitType == 'EXACT',
                           onSelected: (v) =>
                               setDialogState(() => splitType = 'EXACT'),
+                          selectedColor:
+                              const Color(0xFF00C896).withValues(alpha: 0.15),
+                          labelStyle: TextStyle(
+                            color: splitType == 'EXACT'
+                                ? const Color(0xFF00C896)
+                                : null,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   if (splitType == 'EQUAL') ...[
-                    const Text(
-                      'Split between:',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Split between:',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ),
                     ...detail.members.map(
@@ -207,15 +246,21 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                             }
                           });
                         },
+                        activeColor: const Color(0xFF00C896),
                         dense: true,
+                        contentPadding: EdgeInsets.zero,
                       ),
                     ),
                   ] else ...[
-                    const Text(
-                      'Exact amounts:',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Exact amounts:',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ),
                     ...detail.members.map(
@@ -289,6 +334,13 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                     ref.invalidate(groupDetailProvider(widget.groupId));
                   }
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00C896),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 child: const Text('Add'),
               ),
             ],
@@ -304,36 +356,22 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
 
     return detailAsync.when(
       data: (detail) {
-        if (detail == null)
-          return const Scaffold(body: Center(child: Text('Group not found')));
+        if (detail == null) {
+          return const Scaffold(
+            body: Center(child: Text('Group not found')),
+          );
+        }
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(detail.group.name),
-            actions: [
-              IconButton(
-                icon: const Icon(LucideIcons.refreshCw),
-                onPressed: () =>
-                    ref.invalidate(groupDetailProvider(widget.groupId)),
-              ),
-            ],
-            bottom: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              labelColor: const Color(0xFF00C896),
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: const Color(0xFF00C896),
-              tabs: [
-                Tab(text: 'Transactions (${detail.transactions.length})'),
-                Tab(text: 'Expenses (${detail.expenses.length})'),
-                Tab(text: 'Balances (${detail.balances.length})'),
-                Tab(text: 'Members (${detail.members.length})'),
-              ],
-            ),
-          ),
+          backgroundColor: const Color(0xFFF2F7F5),
           body: Column(
             children: [
-              _GroupHeaderStats(detail: detail),
+              _GroupHeroHeader(
+                detail: detail,
+                onRefresh: () =>
+                    ref.invalidate(groupDetailProvider(widget.groupId)),
+                tabController: _tabController,
+              ),
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
@@ -354,64 +392,222 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _showAddExpenseDialog(detail),
-            backgroundColor: Colors.black,
+            backgroundColor: const Color(0xFF00C896),
+            elevation: 0,
             icon: const Icon(LucideIcons.plus, color: Colors.white),
-            label: const Text(
+            label: Text(
               'Add Expense',
-              style: TextStyle(color: Colors.white),
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         );
       },
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF00C896)),
+        ),
+      ),
       error: (e, s) => Scaffold(body: Center(child: Text('Error: $e'))),
     );
   }
 }
 
-class _GroupHeaderStats extends StatelessWidget {
+class _GroupHeroHeader extends StatelessWidget {
   final GroupDetail detail;
-  const _GroupHeaderStats({required this.detail});
+  final VoidCallback onRefresh;
+  final TabController tabController;
+
+  const _GroupHeroHeader({
+    required this.detail,
+    required this.onRefresh,
+    required this.tabController,
+  });
 
   @override
   Widget build(BuildContext context) {
     final totalExpenses = detail.transactions
         .where((t) => t.type == 'EXPENSE')
         .fold(0.0, (sum, t) => sum + t.amount);
+    final isPositive = detail.myBalance >= 0;
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      color: const Color(0xFF0A0A0A),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top row: back + refresh
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      LucideIcons.chevronLeft,
+                      color: Colors.white,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(
+                      LucideIcons.refreshCw,
+                      color: Colors.white.withValues(alpha: 0.5),
+                      size: 18,
+                    ),
+                    onPressed: onRefresh,
+                  ),
+                ],
+              ),
+            ),
+
+            // Group name
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+              child: Text(
+                detail.group.name,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -1.0,
+                  height: 1.1,
+                ),
+              ),
+            ),
+            if (detail.group.description?.isNotEmpty == true)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                child: Text(
+                  detail.group.description!,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white.withValues(alpha: 0.40),
+                  ),
+                ),
+              ),
+
+            // Stats row
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Row(
+                children: [
+                  _StatPill(
+                    label: 'MEMBERS',
+                    value: '${detail.members.length}',
+                    highlight: false,
+                  ),
+                  const SizedBox(width: 10),
+                  _StatPill(
+                    label: 'TOTAL SPENT',
+                    value: '₹${totalExpenses.toStringAsFixed(0)}',
+                    highlight: false,
+                  ),
+                  const SizedBox(width: 10),
+                  _StatPill(
+                    label: 'YOUR BALANCE',
+                    value:
+                        '${isPositive ? "+" : ""}₹${detail.myBalance.toStringAsFixed(0)}',
+                    highlight: true,
+                    highlightColor: isPositive
+                        ? const Color(0xFF00C896)
+                        : const Color(0xFFFF5252),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Tab bar
+            TabBar(
+              controller: tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white.withValues(alpha: 0.35),
+              indicatorColor: const Color(0xFF00C896),
+              indicatorSize: TabBarIndicatorSize.label,
+              dividerColor: Colors.white.withValues(alpha: 0.08),
+              labelStyle: GoogleFonts.spaceGrotesk(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+              unselectedLabelStyle: GoogleFonts.spaceGrotesk(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              tabs: [
+                Tab(text: 'Txns (${detail.transactions.length})'),
+                Tab(text: 'Expenses (${detail.expenses.length})'),
+                Tab(text: 'Balances (${detail.balances.length})'),
+                Tab(text: 'Members (${detail.members.length})'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool highlight;
+  final Color? highlightColor;
+
+  const _StatPill({
+    required this.label,
+    required this.value,
+    required this.highlight,
+    this.highlightColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: highlight
+            ? (highlightColor ?? const Color(0xFF00C896))
+                .withValues(alpha: 0.15)
+            : Colors.white.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(10),
+        border: highlight
+            ? Border.all(
+                color: (highlightColor ?? const Color(0xFF00C896))
+                    .withValues(alpha: 0.3),
+              )
+            : null,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            detail.group.name,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: Colors.white.withValues(alpha: 0.40),
+              letterSpacing: 0.8,
+            ),
           ),
+          const SizedBox(height: 2),
           Text(
-            '${detail.group.description ?? ""} · Admin: ${detail.group.createdByName ?? "Unknown"}',
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _HeaderItem(label: 'Members', value: '${detail.members.length}'),
-              _HeaderItem(
-                label: 'Total Expenses',
-                value: '₹${totalExpenses.toStringAsFixed(2)}',
-              ),
-              _HeaderItem(
-                label: 'Your Balance',
-                value:
-                    '${detail.myBalance >= 0 ? "+" : ""}₹${detail.myBalance.toStringAsFixed(2)}',
-                valueColor: detail.myBalance >= 0
-                    ? const Color(0xFF00C896)
-                    : Colors.red,
-              ),
-            ],
+            value,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: highlight
+                  ? (highlightColor ?? const Color(0xFF00C896))
+                  : Colors.white,
+              letterSpacing: -0.4,
+            ),
           ),
         ],
       ),
@@ -419,35 +615,7 @@ class _GroupHeaderStats extends StatelessWidget {
   }
 }
 
-class _HeaderItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _HeaderItem({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: valueColor,
-          ),
-        ),
-      ],
-    );
-  }
-}
+// ── Tab content widgets ──────────────────────────────────────────────────────
 
 class _TransactionsTab extends StatelessWidget {
   final List<Transaction> transactions;
@@ -455,40 +623,77 @@ class _TransactionsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (transactions.isEmpty)
+    if (transactions.isEmpty) {
       return const Center(child: Text('No transactions yet'));
+    }
 
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: transactions.length,
-      separatorBuilder: (context, index) => const Divider(),
+      separatorBuilder: (context, index) =>
+          const SizedBox(height: 0),
       itemBuilder: (context, index) {
         final tx = transactions[index];
         final isExpense = tx.type == 'EXPENSE';
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(
-            tx.description,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
           ),
-          subtitle: Text(
-            '${tx.fromUserName} · ${tx.createdAt ?? ""}',
-            style: const TextStyle(fontSize: 12),
-          ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Row(
             children: [
-              Text(
-                '${isExpense ? "-" : "+"}₹${tx.amount.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isExpense ? Colors.red : const Color(0xFF00C896),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isExpense
+                      ? const Color(0xFFFF5252).withValues(alpha: 0.10)
+                      : const Color(0xFF00C896).withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  isExpense ? LucideIcons.arrowUpRight : LucideIcons.arrowDownLeft,
+                  size: 16,
+                  color: isExpense
+                      ? const Color(0xFFFF5252)
+                      : const Color(0xFF00C896),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tx.description,
+                      style: GoogleFonts.spaceGrotesk(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    Text(
+                      tx.fromUserName ?? '',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF888888),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Text(
-                tx.type,
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                '${isExpense ? "-" : "+"}₹${tx.amount.toStringAsFixed(2)}',
+                style: GoogleFonts.spaceGrotesk(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                  color: isExpense
+                      ? const Color(0xFFFF5252)
+                      : const Color(0xFF00C896),
+                  letterSpacing: -0.4,
+                ),
               ),
             ],
           ),
@@ -504,51 +709,88 @@ class _ExpensesTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (expenses.isEmpty)
+    if (expenses.isEmpty) {
       return const Center(child: Text('No expenses recorded'));
+    }
 
-    return ListView.separated(
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: expenses.length,
-      separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) {
         final ex = expenses[index];
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const CircleAvatar(
-            backgroundColor: Color(0xFFF8F9FA),
-            child: Icon(LucideIcons.fileText, size: 18, color: Colors.black),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
           ),
-          title: Text(
-            ex.description,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          subtitle: Text(
-            'Paid by ${ex.paidByName}',
-            style: const TextStyle(fontSize: 12),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: [
-              Text(
-                '₹${ex.totalAmount.toStringAsFixed(2)}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              if (!ex.isCancelled)
-                IconButton(
-                  icon: const Icon(
-                    LucideIcons.trash2,
-                    size: 16,
-                    color: Colors.red,
-                  ),
-                  onPressed: () async {
-                    final api = ref.read(apiServiceProvider);
-                    await api.delete('${ApiConfig.createExpense}/${ex.id}');
-                    ref.invalidate(
-                      groupDetailProvider(ex.groupName),
-                    ); // This is tricky, need groupId
-                  },
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2F7F5),
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                child: const Icon(
+                  LucideIcons.fileText,
+                  size: 16,
+                  color: Color(0xFF0A0A0A),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ex.description,
+                      style: GoogleFonts.spaceGrotesk(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    Text(
+                      'Paid by ${ex.paidByName}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF888888),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '₹${ex.totalAmount.toStringAsFixed(2)}',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  if (!ex.isCancelled)
+                    IconButton(
+                      icon: const Icon(
+                        LucideIcons.trash2,
+                        size: 16,
+                        color: Color(0xFFFF5252),
+                      ),
+                      onPressed: () async {
+                        final api = ref.read(apiServiceProvider);
+                        await api.delete(
+                          '${ApiConfig.createExpense}/${ex.id}',
+                        );
+                        ref.invalidate(groupDetailProvider(ex.groupName));
+                      },
+                    ),
+                ],
+              ),
             ],
           ),
         );
@@ -563,33 +805,72 @@ class _BalancesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (balances.isEmpty) return const Center(child: Text('No balances yet'));
+    if (balances.isEmpty) {
+      return const Center(child: Text('No balances yet'));
+    }
 
-    return ListView.separated(
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: balances.length,
-      separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) {
         final b = balances[index];
         final isPos = b.netBalance >= 0;
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: CircleAvatar(
-            backgroundColor: Colors.grey.shade100,
-            child: Text(
-              b.fullName.isNotEmpty ? b.fullName[0].toUpperCase() : '?',
-            ),
+        final initial =
+            b.fullName.isNotEmpty ? b.fullName[0].toUpperCase() : '?';
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
           ),
-          title: Text(
-            b.fullName,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          trailing: Text(
-            '${isPos ? "+" : ""}₹${b.netBalance.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isPos ? const Color(0xFF00C896) : Colors.red,
-            ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isPos
+                      ? const Color(0xFF00C896).withValues(alpha: 0.10)
+                      : const Color(0xFFFF5252).withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    initial,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: isPos
+                          ? const Color(0xFF00C896)
+                          : const Color(0xFFFF5252),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  b.fullName,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+              Text(
+                '${isPos ? "+" : ""}₹${b.netBalance.toStringAsFixed(2)}',
+                style: GoogleFonts.spaceGrotesk(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  color: isPos
+                      ? const Color(0xFF00C896)
+                      : const Color(0xFFFF5252),
+                  letterSpacing: -0.4,
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -619,11 +900,17 @@ class _MembersTab extends ConsumerWidget {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Add Member'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  title: Text(
+                    'Add Member',
+                    style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+                  ),
                   content: TextField(
                     controller: controller,
                     decoration: const InputDecoration(
-                      labelText: 'Email or Phone',
+                      labelText: 'Email or phone',
                     ),
                   ),
                   actions: [
@@ -643,6 +930,13 @@ class _MembersTab extends ConsumerWidget {
                           onRefresh();
                         }
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00C896),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                       child: const Text('Add'),
                     ),
                   ],
@@ -653,51 +947,96 @@ class _MembersTab extends ConsumerWidget {
             label: const Text('Add Member'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00C896),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 52),
             ),
           ),
         ),
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.all(16),
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             itemCount: members.length,
-            separatorBuilder: (context, index) => const Divider(),
             itemBuilder: (context, index) {
               final m = members[index];
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(
-                  backgroundColor: Colors.grey.shade100,
-                  child: Text(
-                    m.fullName.isNotEmpty ? m.fullName[0].toUpperCase() : '?',
-                  ),
+              final initial =
+                  m.fullName.isNotEmpty ? m.fullName[0].toUpperCase() : '?';
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-                title: Text(
-                  m.fullName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                subtitle: Text(
-                  m.identifier,
-                  style: const TextStyle(fontSize: 12),
-                ),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    m.role,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0A0A0A),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          initial,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            m.fullName,
+                            style: GoogleFonts.spaceGrotesk(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          Text(
+                            m.identifier,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF888888),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: m.role == 'ADMIN'
+                            ? const Color(0xFF00C896).withValues(alpha: 0.12)
+                            : const Color(0xFFF2F7F5),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        m.role,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: m.role == 'ADMIN'
+                              ? const Color(0xFF00C896)
+                              : const Color(0xFF888888),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
