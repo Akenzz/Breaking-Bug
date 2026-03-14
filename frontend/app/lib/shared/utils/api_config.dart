@@ -24,6 +24,14 @@ class ApiConfig {
   static const String whomIOwe = "$baseUrl/ledger/whom-i-owe";
   static const String recordPayment = "$baseUrl/ledger/record";
   
+  // Expenses
+  static const String createExpense = "$baseUrl/expenses";
+  static const String directSplit = "$baseUrl/expenses/direct-split";
+  
+  // Transfers
+  static const String initiateTransfer = "$baseUrl/transfers/initiate";
+  static const String confirmTransfer = "$baseUrl/transfers/confirm";
+  
   // AI - Finance
   static const String parseBills = "$aiBaseUrl/parse-bill";
   static const String analysis = "$aiBaseUrl/analyze-finance";

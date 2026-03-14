@@ -21,6 +21,7 @@ import 'package:smartpay/shared/services/providers.dart';
 import 'package:smartpay/features/payments/payments_hub_screen.dart';
 import 'package:smartpay/features/payments/pending_confirmations_screen.dart';
 import 'package:smartpay/features/payments/transfer_history_screen.dart';
+import 'package:smartpay/features/payments/send_transfer_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final isLoggedIn = ref.watch(authStateProvider);
@@ -31,11 +32,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isPublicPage = state.uri.path == '/' || state.uri.path == '/login' || state.uri.path == '/signup';
       
       if (!isLoggedIn) {
-        // If not logged in and trying to access a private page, go to landing
         return isPublicPage ? null : '/';
       }
 
-      // If logged in and on a public page, go to dashboard
       if (isPublicPage) {
         return '/dashboard';
       }
@@ -119,6 +118,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/transfers/history',
             builder: (context, state) => const TransferHistoryScreen(),
+          ),
+          GoRoute(
+            path: '/transfers/send',
+            builder: (context, state) {
+              final userId = state.uri.queryParameters['userId'];
+              final amount = state.uri.queryParameters['amount'];
+              return SendTransferScreen(userId: userId, amount: amount);
+            },
           ),
         ],
       ),

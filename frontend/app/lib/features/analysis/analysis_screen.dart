@@ -114,6 +114,15 @@ class AnalysisScreen extends ConsumerWidget {
                 _PredictionCard(prediction: analysis.prediction),
                 const SizedBox(height: 24),
 
+                // Anomaly Detection
+                const Text(
+                  'Anomaly Detection',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                _AnomalySection(anomalies: analysis.anomalies, skipped: analysis.anomalySkipped),
+                const SizedBox(height: 24),
+
                 // AI Insights
                 const Text(
                   'AI Insights',
@@ -473,6 +482,46 @@ class _PredictItem extends StatelessWidget {
         Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
         Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ],
+    );
+  }
+}
+
+class _AnomalySection extends StatelessWidget {
+  final List<dynamic> anomalies;
+  final bool skipped;
+  const _AnomalySection({required this.anomalies, required this.skipped});
+
+  @override
+  Widget build(BuildContext context) {
+    if (skipped) {
+      return Card(
+        child: ListTile(
+          leading: const Icon(LucideIcons.info, color: Colors.blue),
+          title: const Text('Detection Skipped', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          subtitle: const Text('Needs at least 25 transactions for anomaly detection.', style: TextStyle(fontSize: 12)),
+        ),
+      );
+    }
+
+    if (anomalies.isEmpty) {
+      return Card(
+        child: ListTile(
+          leading: const Icon(LucideIcons.shieldCheck, color: Color(0xFF00C896)),
+          title: const Text('No anomalies detected', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          subtitle: const Text('Your spending patterns look normal.', style: TextStyle(fontSize: 12)),
+        ),
+      );
+    }
+
+    return Column(
+      children: anomalies.map((a) => Card(
+        child: ListTile(
+          leading: const Icon(LucideIcons.alertTriangle, color: Colors.orange),
+          title: Text(a['description'] ?? 'Suspicious transaction', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          subtitle: Text(a['reason'] ?? '', style: const TextStyle(fontSize: 12)),
+          trailing: Text('₹${a['amount']}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+        ),
+      )).toList(),
     );
   }
 }

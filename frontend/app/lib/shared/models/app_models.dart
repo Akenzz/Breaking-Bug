@@ -50,12 +50,39 @@ class Friend {
   }
 }
 
+class FriendRequest {
+  final int requestId;
+  final int requesterId;
+  final String requesterName;
+  final String requesterPhone;
+  final String createdAt;
+
+  FriendRequest({
+    required this.requestId,
+    required this.requesterId,
+    required this.requesterName,
+    required this.requesterPhone,
+    required this.createdAt,
+  });
+
+  factory FriendRequest.fromJson(Map<String, dynamic> json) {
+    return FriendRequest(
+      requestId: json['requestId'],
+      requesterId: json['requesterId'],
+      requesterName: json['requesterName'] ?? 'Unknown',
+      requesterPhone: json['requesterPhone'] ?? '',
+      createdAt: json['createdAt'] ?? '',
+    );
+  }
+}
+
 class Group {
   final int? id;
   final String name;
   final String? description;
   final String? createdByName;
   final String? groupCode;
+  final String? createdByIdentifier;
 
   Group({
     this.id,
@@ -63,6 +90,7 @@ class Group {
     this.description,
     this.createdByName,
     this.groupCode,
+    this.createdByIdentifier,
   });
 
   factory Group.fromJson(Map<String, dynamic> json) {
@@ -72,6 +100,128 @@ class Group {
       description: json['description'],
       createdByName: json['createdByName'],
       groupCode: json['groupCode'],
+      createdByIdentifier: json['createdByIdentifier'],
+    );
+  }
+}
+
+class GroupMember {
+  final int userId;
+  final String fullName;
+  final String identifier;
+  final String role;
+  final bool isFriend;
+
+  GroupMember({
+    required this.userId,
+    required this.fullName,
+    required this.identifier,
+    required this.role,
+    required this.isFriend,
+  });
+
+  factory GroupMember.fromJson(Map<String, dynamic> json) {
+    return GroupMember(
+      userId: json['userId'],
+      fullName: json['fullName'] ?? '',
+      identifier: json['identifier'] ?? '',
+      role: json['role'] ?? 'MEMBER',
+      isFriend: json['isFriend'] ?? false,
+    );
+  }
+}
+
+class UserBalance {
+  final int userId;
+  final String fullName;
+  final double netBalance;
+
+  UserBalance({
+    required this.userId,
+    required this.fullName,
+    required this.netBalance,
+  });
+
+  factory UserBalance.fromJson(Map<String, dynamic> json) {
+    return UserBalance(
+      userId: json['userId'],
+      fullName: json['fullName'] ?? '',
+      netBalance: (json['netBalance'] ?? 0.0).toDouble(),
+    );
+  }
+}
+
+class GroupExpense {
+  final int id;
+  final String description;
+  final double totalAmount;
+  final String groupName;
+  final String paidByName;
+  final int paidByUserId;
+  final String createdAt;
+  final bool isCancelled;
+
+  GroupExpense({
+    required this.id,
+    required this.description,
+    required this.totalAmount,
+    required this.groupName,
+    required this.paidByName,
+    required this.paidByUserId,
+    required this.createdAt,
+    required this.isCancelled,
+  });
+
+  factory GroupExpense.fromJson(Map<String, dynamic> json) {
+    return GroupExpense(
+      id: json['id'],
+      description: json['description'] ?? '',
+      totalAmount: (json['totalAmount'] ?? 0.0).toDouble(),
+      groupName: json['groupName'] ?? '',
+      paidByName: json['paidByName'] ?? '',
+      paidByUserId: json['paidByUserId'] ?? 0,
+      createdAt: json['createdAt'] ?? '',
+      isCancelled: json['isCancelled'] ?? false,
+    );
+  }
+}
+
+class GroupDetail {
+  final Group group;
+  final User currentUser;
+  final List<GroupMember> members;
+  final List<Transaction> transactions;
+  final List<UserBalance> balances;
+  final double myBalance;
+  final List<GroupExpense> expenses;
+
+  GroupDetail({
+    required this.group,
+    required this.currentUser,
+    required this.members,
+    required this.transactions,
+    required this.balances,
+    required this.myBalance,
+    required this.expenses,
+  });
+
+  factory GroupDetail.fromJson(Map<String, dynamic> json) {
+    return GroupDetail(
+      group: Group.fromJson(json['group'] ?? {}),
+      currentUser: User.fromJson(json['currentUser'] ?? {}),
+      members: (json['members'] as List? ?? [])
+          .map((e) => GroupMember.fromJson(e))
+          .toList(),
+      transactions: (json['transactions'] as List? ?? [])
+          .map((e) => Transaction.fromJson(e))
+          .toList(),
+      balances: (json['balances'] as List? ?? [])
+          .map((e) => UserBalance.fromJson(e))
+          .toList(),
+      myBalance: (json['myBalance'] ?? 0.0).toDouble(),
+      expenses: (json['expenses'] as List? ?? [])
+          .map((e) => GroupExpense.fromJson(e))
+          .toList(),
     );
   }
 }
@@ -83,7 +233,7 @@ class Transaction {
   final String? toUserName;
   final String? createdAt;
   final double amount;
-  final String type; // EXPENSE, INCOME
+  final String type; // EXPENSE, SETTLEMENT
   final String? perspective;
 
   Transaction({
@@ -118,6 +268,46 @@ class Transaction {
       'fromUserName': fromUserName ?? '',
       'toUserName': toUserName ?? '',
     };
+  }
+}
+
+class WhoOwesMe {
+  final int userId;
+  final String? userName;
+  final double amount;
+
+  WhoOwesMe({
+    required this.userId,
+    this.userName,
+    required this.amount,
+  });
+
+  factory WhoOwesMe.fromJson(Map<String, dynamic> json) {
+    return WhoOwesMe(
+      userId: json['userId'],
+      userName: json['userName'],
+      amount: (json['amount'] ?? 0.0).toDouble(),
+    );
+  }
+}
+
+class WhomIOwe {
+  final int userId;
+  final String? userName;
+  final double amount;
+
+  WhomIOwe({
+    required this.userId,
+    this.userName,
+    required this.amount,
+  });
+
+  factory WhomIOwe.fromJson(Map<String, dynamic> json) {
+    return WhomIOwe(
+      userId: json['userId'],
+      userName: json['userName'],
+      amount: (json['amount'] ?? 0.0).toDouble(),
+    );
   }
 }
 
@@ -331,6 +521,7 @@ class FraudRiskResponse {
   final bool isBlocked;
   final String message;
   final List<String> riskReasons;
+  final List<RiskExplanation>? explanation;
 
   FraudRiskResponse({
     required this.fraudRiskScore,
@@ -338,6 +529,7 @@ class FraudRiskResponse {
     required this.isBlocked,
     required this.message,
     required this.riskReasons,
+    this.explanation,
   });
 
   factory FraudRiskResponse.fromJson(Map<String, dynamic> json) {
@@ -347,6 +539,29 @@ class FraudRiskResponse {
       isBlocked: json['is_blocked'] ?? false,
       message: json['message'] ?? '',
       riskReasons: List<String>.from(json['risk_reasons'] ?? []),
+      explanation: (json['explanation'] as List?)
+          ?.map((e) => RiskExplanation.fromJson(e))
+          .toList(),
+    );
+  }
+}
+
+class RiskExplanation {
+  final String feature;
+  final dynamic value;
+  final double impact;
+
+  RiskExplanation({
+    required this.feature,
+    required this.value,
+    required this.impact,
+  });
+
+  factory RiskExplanation.fromJson(Map<String, dynamic> json) {
+    return RiskExplanation(
+      feature: json['feature'] ?? '',
+      value: json['value'],
+      impact: (json['impact'] ?? 0.0).toDouble(),
     );
   }
 }

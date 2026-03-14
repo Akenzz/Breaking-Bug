@@ -22,10 +22,16 @@ class PaymentsHubScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _PaymentNavCard(
+              title: 'Send Money',
+              description: 'Transfer funds instantly to any user',
+              icon: LucideIcons.send,
+              route: '/transfers/send',
+            ),
+            const SizedBox(height: 16),
+            _PaymentNavCard(
               title: 'Payment Requests',
               description: 'Confirm or dispute incoming transfers',
               icon: LucideIcons.bellRing,
-              count: '5',
               route: '/transfers/pending',
             ),
             const SizedBox(height: 16),
